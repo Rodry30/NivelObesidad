@@ -22,5 +22,5 @@ from django.shortcuts import redirect
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('prediccion/', include('prediccion.urls')),
-    path('', lambda request: redirect('formPrediccion')),
+    path('', lambda request: redirect('/prediccion/formulario/')),
 ]
