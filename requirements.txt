@@ -4,3 +4,4 @@ whitenoise
 requests
 django-cors-headers
 psycopg2-binary
+google-generativeai
