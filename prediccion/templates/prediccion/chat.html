@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Simple</title>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        #chat-box { border: 1px solid #ccc; padding: 10px; width: 100%; max-width: 600px; height: 300px; overflow-y: scroll; margin-bottom: 10px; }
+        .message { margin: 5px 0; }
+        .user { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Chat con el sistema</h1>
+    <div id="chat-box"></div>
+    <form id="chat-form">
+        <input type="text" id="message-input" placeholder="Escribe un mensaje..." required>
+        <button type="submit">Enviar</button>
+    </form>
+
+    <script>
+        const form = document.getElementById('chat-form');
+        const input = document.getElementById('message-input');
+        const chatBox = document.getElementById('chat-box');
+
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Mostrar mensaje del usuario
+            chatBox.innerHTML += `<div class="message"><span class="user">Tú:</span> ${message}</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Enviar mensaje al servidor
+            const response = await fetch("", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCSRFToken(),
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: `message=${encodeURIComponent(message)}`
+            });
+
+            const data = await response.json();
+            chatBox.innerHTML += `<div class="message"><span class="user">Bot:</span> ${data.response}</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            input.value = "";
+        });
+
+        // Obtener el CSRF token de la cookie
+        function getCSRFToken() {
+            const name = "csrftoken";
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + "=")) {
+                    return decodeURIComponent(cookie.substring(name.length + 1));
+                }
+            }
+            return "";
+        }
+    </script>
+</body>
+</html>

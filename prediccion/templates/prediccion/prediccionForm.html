@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Formulario de Predicción</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      background: #f5f8fa;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .form-container {
+      max-width: 1200px;
+    }
+
+    .form-section {
+      background: #ffffff;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+    .form-check-inline {
+      margin-right: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    label {
+      font-weight: 500;
+    }
+
+    .btn {
+      width: 100%;
+    }
+
+    .alert {
+      margin-top: 1rem;
+    }
+
+    input[type="radio"], input[type="checkbox"] {
+      margin-right: 0.3rem;
+    }
+
+    #chat-box {
+      background-color: #fafafa;
+      border-radius: 0.5rem;
+      border: 1px solid #ddd;
+    }
+
+    #chat-form {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    #user-message {
+      flex-grow: 1;
+    }
+
+    .form-check-inline {
+    margin-right: 1rem;
+    }
+    @media (max-width: 576px) {
+    .form-section {
+        padding: 1rem;
+    }
+
+    .form-check-inline {
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .btn {
+        font-size: 0.9rem;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+    }
+</style>
+
+</head>
+<body>
+<div class="container mt-5">
+  <div class="container my-5">
+    <!-- Título principal -->
+    <h1 class="text-center mb-2">Nivel de Obesidad</h1>
+    <p class="text-muted text-center mb-4">Seleccione las opciones correspondientes</p>
+
+
+    {% if resultado %}
+    <!-- Resultado y acciones -->
+    <div id="resultadoMensaje" class="mb-5">
+      <div class="alert alert-info text-center">
+        <strong>Resultado:</strong> {{ resultado }}
+      </div>
+      <div class="d-flex justify-content-center gap-3">
+        <button class="btn btn-outline-primary" onclick="window.print()">Imprimir PDF</button>
+        <button class="btn btn-outline-success" onclick="pedirCorreo()">Enviar por correo</button>
+      </div>
+    </div>
+
+    <!-- Chatbot -->
+    <div class="row justify-content-center mb-5">
+      <div class="col-md-6">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">Asistente Virtual</h5>
+            <div id="chat-box" class="border p-3 mb-2 rounded" style="height: 300px; overflow-y: auto;">
+              <div class="chat-message bot">
+                <strong>Bot:</strong> Hola 👋, dime si quieres recomendaciones para mejorar tu salud según tu resultado.
+              </div>
+            </div>
+            <form id="chat-form" onsubmit="enviarPregunta(event)">
+              <div class="input-group">
+                <input type="text" id="user-message" class="form-control" placeholder="Escribe tu pregunta...">
+                <button type="submit" class="btn btn-success">Enviar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+
+    <!-- Formulario -->
+<div class="row justify-content-center">
+  <div class="col-lg-8 col-md-10 col-sm-12">
+    <form method="POST">
+        
+      {% csrf_token %}
+      <div class="bg-white border rounded-4 p-4 shadow-sm">
+        <!-- Género -->
+        <div class="mb-3">
+            <label class="form-label">Género:</label>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="genero" value="1" required {% if request.POST.genero == "1" %}checked{% endif %}>
+                <label class="form-check-label">Masculino</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="genero" value="2" {% if request.POST.genero == "2" %}checked{% endif %}>
+                <label class="form-check-label">Femenino</label>
+            </div>
+        </div>
+
+       
+
+    <div class="row">
+        <!-- Edad -->
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Edad:</label>
+            <input type="number" name="edad" class="form-control" min="1" max="120" required value="{{ request.POST.edad }}">
+        </div>
+
+        <!-- Estatura -->
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Estatura (m):</label>
+            <input type="number" name="estatura" class="form-control" step="0.01" min="0.5" max="2.5" required value="{{ request.POST.estatura }}">
+        </div>
+    </div>
+
+        <!-- Peso -->
+        <div class="mb-3">
+            <label class="form-label">Peso (kg):</label>
+            <input type="range" class="form-range" name="peso" min="30" max="300" step="1"
+                   value="{{ request.POST.peso|default:70 }}"
+                   oninput="document.getElementById('pesoOutput').innerText = this.value">
+            <div class="text-end"><strong><span id="pesoOutput">{{ request.POST.peso|default:70 }}</span> kg</strong></div>
+        </div>
+
+        
+        <!-- Antecedentes familiares -->
+        <div class="mb-3 row align-items-center">
+            <label class="col-md-5 col-form-label">Antecedentes familiares con sobrepeso:</label>
+            <h1></h1>
+            <div class="col-md-7">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="afdeo" value="1" required {% if request.POST.afdeo == "1" %}checked{% endif %}>
+                    <label class="form-check-label">Sí</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="afdeo" value="0" {% if request.POST.afdeo == "0" %}checked{% endif %}>
+                    <label class="form-check-label">No</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comida alta en calorías -->
+        <div class="mb-3">
+            <label class="form-label">¿Consume comida alta en calorías con frecuencia?</label>
+            <h1></h1>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="favc" value="1" required {% if request.POST.favc == "1" %}checked{% endif %}>
+                <label class="form-check-label">Sí</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="favc" value="0" {% if request.POST.favc == "0" %}checked{% endif %}>
+                <label class="form-check-label">No</label>
+            </div>
+        </div>
+
+
+
+        <!-- Vegetales -->
+        <div class="mb-3">
+            <label class="form-label">Frecuencia de consumo de vegetales:</label>
+            <h1></h1>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="fcvc" value="1" required {% if request.POST.fcvc == '1' %}checked{% endif %}>
+                <label class="form-check-label">Nunca</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="fcvc" value="2" required {% if request.POST.fcvc == '2' %}checked{% endif %}>
+                <label class="form-check-label">A veces</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="fcvc" value="3" required {% if request.POST.fcvc == '3' %}checked{% endif %}>
+                <label class="form-check-label">Siempre</label>
+            </div>
+        </div>
+
+        <!-- Comidas principales -->
+        <div class="mb-3">
+            <label class="form-label">Número de comidas principales:</label>
+            <h1></h1>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="ncp" value="1" required {% if request.POST.ncp == '1' %}checked{% endif %}>
+                <label class="form-check-label">1-2</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="ncp" value="2" required {% if request.POST.ncp == '2' %}checked{% endif %}>
+                <label class="form-check-label">Tres</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="ncp" value="3" required {% if request.POST.ncp == '3' %}checked{% endif %}>
+                <label class="form-check-label">Más de tres</label>
+            </div>
+        </div>
+
+        <!-- Snacks -->
+        <div class="mb-3">
+            <label class="form-label">Comida entre comidas:</label>
+            <h1></h1>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="caec" value="1" required {% if request.POST.caec == '1' %}checked{% endif %}>
+                <label class="form-check-label">1-2 veces</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="caec" value="2" required {% if request.POST.caec == '2' %}checked{% endif %}>
+                <label class="form-check-label">Tres</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="caec" value="3" required {% if request.POST.caec == '3' %}checked{% endif %}>
+                <label class="form-check-label">Más de tres</label>
+            </div>
+        </div>
+
+        <!-- Fuma -->
+        <div class="mb-3">
+            <label class="form-label">¿Fuma tabaco?:</label>
+            <h1></h1>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tabaco" value="1" required {% if request.POST.tabaco == "1" %}checked{% endif %}>
+                <label class="form-check-label">Sí</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tabaco" value="0" {% if request.POST.tabaco == "0" %}checked{% endif %}>
+                <label class="form-check-label">No</label>
+            </div>
+        </div>
+
+        <!-- Agua -->
+        <div class="mb-3">
+            <label class="form-label">Consumo de agua:</label>
+            <h1></h1>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="ch20" value="1" required {% if request.POST.ch20 == '1' %}checked{% endif %}>
+                <label class="form-check-label">Menor a 1L</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="ch20" value="2" required {% if request.POST.ch20 == '2' %}checked{% endif %}>
+                <label class="form-check-label">1-2L</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="ch20" value="3" required {% if request.POST.ch20 == '3' %}checked{% endif %}>
+                <label class="form-check-label">Más de 2L</label>
+            </div>
+        </div>
+
+        <!-- Control calorías -->
+        <div class="mb-3">
+            <label class="form-label">Monitoreo de calorías:</label>
+            <h1></h1>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="scc" value="0" required {% if request.POST.scc == '0' %}checked{% endif %}>
+                <label class="form-check-label">Sí</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="scc" value="1" required {% if request.POST.scc == '1' %}checked{% endif %}>
+                <label class="form-check-label">No</label>
+            </div>
+        </div>
+
+        <!-- Actividad física -->
+        <div class="mb-3">
+            <label class="form-label">Frecuencia de actividad física:</label>
+            <h1></h1>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="faf" value="0" required {% if request.POST.faf == '0' %}checked{% endif %}>
+                <label class="form-check-label">No</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="faf" value="1" required {% if request.POST.faf == '1' %}checked{% endif %}>
+                <label class="form-check-label">1-2 días</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="faf" value="2" required {% if request.POST.faf == '2' %}checked{% endif %}>
+                <label class="form-check-label">2-4 días</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="faf" value="3" required {% if request.POST.faf == '3' %}checked{% endif %}>
+                <label class="form-check-label">4-5 días</label>
+            </div>
+        </div>
+
+            <!-- Tiempo en tecnología -->
+            <div class="mb-3">
+                <label class="form-label">Tiempo en tecnologia:</label>
+                <h1></h1>              
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="tue" value="1" required {% if request.POST.tue == '0' %}checked{% endif %}>
+                    <label class="form-check-label">0-2 horas</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="tue" value="2" required {% if request.POST.tue == '1' %}checked{% endif %}>
+                    <label class="form-check-label">3-5 horas</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="tue" value="3" required {% if request.POST.tue == '2' %}checked{% endif %}>
+                    <label class="form-check-label">Más de 5 horas</label>
+                </div>
+            </div>
+
+            <!-- Consumo de alcohol -->
+            <div class="mb-3">
+                <label class="form-label">Frecuencia consume alcohol?</label>
+                <h1></h1>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="calc" value="0" required {% if request.POST.calc == '0' %}checked{% endif %}>
+                    <label class="form-check-label">Nunca</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="calc" value="1" required {% if request.POST.calc == '1' %}checked{% endif %}>
+                    <label class="form-check-label">A veces</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="calc" value="2" required {% if request.POST.calc == '2' %}checked{% endif %}>
+                    <label class="form-check-label">Frecuentemente</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="calc" value="3" required {% if request.POST.calc == '3' %}checked{% endif %}>
+                    <label class="form-check-label">Siempre</label>
+                </div>
+            </div>
+
+            <!-- Transporte usado -->
+            <div class="mb-3">
+                <label class="form-label">Tipo de transporte más usado:</label>
+                <h1></h1>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="mtrans" value="0" required {% if request.POST.mtrans == '0' %}checked{% endif %}>
+                    <label class="form-check-label">Caminar</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="mtrans" value="1" required {% if request.POST.mtrans == '1' %}checked{% endif %}>
+                    <label class="form-check-label">Bicicleta</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="mtrans" value="2" required {% if request.POST.mtrans == '2' %}checked{% endif %}>
+                    <label class="form-check-label">Motocicleta</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="mtrans" value="3" required {% if request.POST.mtrans == '3' %}checked{% endif %}>
+                    <label class="form-check-label">Transporte público</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="mtrans" value="4" required {% if request.POST.mtrans == '4' %}checked{% endif %}>
+                    <label class="form-check-label">Automovil</label>
+                </div>
+            </div>
+
+
+                <!-- Botones de acción -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-start mt-4">
+                <button type="submit" class="btn btn-primary">Predecir</button>
+                <button type="reset" class="btn btn-secondary" onclick="limpiarFormulario()">Limpiar Formulario</button>
+                </div>
+            </div>
+        </form>
+    </div>  
+</div>
+    <!-- Modal correo -->
+    <div class="modal fade" id="correoModal" tabindex="-1" aria-labelledby="correoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="post" action="{% url 'enviar_correo' %}">
+                {% csrf_token %}
+                <input type="hidden" name="data_formulario" id="data_formulario">
+                <input type="hidden" name="resultado" value="{{ resultado }}">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="correoModalLabel">Enviar al correo</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label for="email">Correo:</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Enviar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script>
+    function pedirCorreo() {
+        const form = document.querySelector('form');
+        const formData = new FormData(form);
+        const obj = {};
+        formData.forEach((value, key) => {
+            obj[key] = value;
+        });
+        document.getElementById('data_formulario').value = JSON.stringify(obj);
+        new bootstrap.Modal(document.getElementById('correoModal')).show();
+    }
+
+/*
+    document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("formulario");
+    const pesoInput = form.querySelector('input[name="peso"]');
+    const pesoOutput = document.getElementById("pesoOutput"); // solo si usas un output en tiempo real
+    const resultado = document.getElementById("resultadoMensaje");
+
+    form.addEventListener("reset", () => {
+        // Esperamos al próximo "tick" para que el reset surta efecto
+        setTimeout(() => {
+            if (pesoOutput) {
+                pesoOutput.innerText = pesoInput.value;
+            }
+
+            // Oculta el resultado (si existe en el DOM)
+            if (resultado) {
+                resultado.style.display = "none";
+            }
+        }, 0);
+    });
+});*/
+
+    function limpiarFormulario() {
+        window.location.href = window.location.pathname;
+    }
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+    function enviarPregunta(event) {
+    event.preventDefault();
+
+    const mensaje = document.getElementById("user-message").value;
+    if (!mensaje.trim()) return;
+
+    const chatBox = document.getElementById("chat-box");
+    chatBox.innerHTML += `<div class="chat-message user"><strong>Tú:</strong> ${mensaje}</div>`;
+    document.getElementById("user-message").value = '';
+
+    // Capturamos los datos actuales del formulario
+    const datosFormulario = {
+        genero: document.querySelector('input[name="genero"]:checked')?.value || "",
+        edad: document.querySelector('input[name="edad"]').value,
+        estatura: document.querySelector('input[name="estatura"]').value,
+        peso: document.querySelector('input[name="peso"]').value,
+        afdeo: document.querySelector('input[name="afdeo"]:checked')?.value || "",
+        favc: document.querySelector('input[name="favc"]:checked')?.value || "",
+        fcvc: document.querySelector('input[name="fcvc"]:checked')?.value || "",
+        ncp: document.querySelector('input[name="ncp"]:checked')?.value || "",
+        caec: document.querySelector('input[name="caec"]:checked')?.value || "",
+        tabaco: document.querySelector('input[name="tabaco"]:checked')?.value || "",
+        ch20: document.querySelector('input[name="ch20"]:checked')?.value || "",
+        scc: document.querySelector('input[name="scc"]:checked')?.value || "",
+        faf: document.querySelector('input[name="faf"]:checked')?.value || "",
+        tue: document.querySelector('input[name="tue"]:checked')?.value || "",
+        calc: document.querySelector('input[name="calc"]:checked')?.value || "",
+        mtrans: document.querySelector('input[name="mtrans"]:checked')?.value || ""
+    };
+
+    // Obtenemos el resultado del modelo (puede estar en una variable en el HTML)
+    const resultadoObesidad = document.getElementById("resultadoMensaje")?.innerText || "";
+
+    fetch("/prediccion/chat/", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCookie("csrftoken")
+        },
+        body: JSON.stringify({
+        mensaje: mensaje,
+        datosFormulario: datosFormulario,
+        resultado: resultadoObesidad
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.respuesta) {
+        chatBox.innerHTML += `<div class="chat-message bot"><strong>Bot:</strong> ${data.respuesta}</div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+        } else if (data.error) {
+        chatBox.innerHTML += `<div class="chat-message error">Error: ${data.error}</div>`;
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        chatBox.innerHTML += `<div class="chat-message error">Error de red: ${error}</div>`;
+    });
+    }
+
+
+
+
+function mostrarMensajeBot(mensaje) {
+  const chatBox = document.getElementById("chat-box");
+  chatBox.innerHTML += `<div class="chat-message bot"><strong>Bot:</strong> ${mensaje}</div>`;
+}
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
